@@ -2,24 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { PlusCircle, LayoutDashboard, Save, Loader2, Lock, LogIn } from 'lucide-react';
 
 // ------------------------------------------------------------------
-// 1. 設定區域
+// 設定區域
 // ------------------------------------------------------------------
-// 這是您最新的 Google Apps Script 網址
+// 請確認這裡填入的是您 Apps Script 剛剛部署好的網址
 const API_URL = "https://script.google.com/macros/s/AKfycbyoFAj2LOamK4ISy2g9y6wforgHuvdqXdTdpeHjC7wPKG_ipOoRUE_ua1TLt-pvrhyf/exec";
 
-// 設定管理員密碼 (查看報表用)
+// 設定管理員密碼
 const ADMIN_PASSWORD = "012820"; 
 
-// ------------------------------------------------------------------
-// 2. 主程式開始
-// ------------------------------------------------------------------
 function App() {
   const [view, setView] = useState<'form' | 'dashboard' | 'login'>('form');
   const [loading, setLoading] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   
-  // 統計數據狀態
   const [stats, setStats] = useState({
     totalSales: 0,
     totalReceived: 0,
@@ -28,11 +24,11 @@ function App() {
     recent: [] as any[]
   });
 
-  // 表單資料狀態
   const initialForm = {
     date: new Date().toISOString().split('T')[0],
     salesRep: '',
     productType: '個人塔位',
+    towerId: '',  // 新增塔位編號欄位
     buyerName: '',
     actualPrice: '',
     receivedAmount: '',
@@ -41,32 +37,27 @@ function App() {
   const [formData, setFormData] = useState(initialForm);
 
   // ----------------------------------------------------------------
-  // 功能：提交表單 (傳送資料到 Google Sheets)
+  // 提交表單
   // ----------------------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // 準備要傳送的資料
       const payload = {
         ...formData,
-        id: crypto.randomUUID(),
-        reportType: '新成交',
-        balanceAmount: (Number(formData.actualPrice) - Number(formData.receivedAmount)).toString(),
         timestamp: new Date().toISOString()
       };
 
-      // 使用 fetch POST 傳送
       await fetch(API_URL, {
         method: "POST",
-        mode: "no-cors", 
+        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      alert("🎉 報表提交成功！資料已存入雲端。");
-      setFormData(initialForm); // 清空表單
+      alert("🎉 報表提交成功！資料已寫入試算表。");
+      setFormData(initialForm);
 
     } catch (error) {
       console.error(error);
@@ -77,13 +68,13 @@ function App() {
   };
 
   // ----------------------------------------------------------------
-  // 功能：抓取儀表板資料 (從 Google Sheets 讀取)
+  // 抓取資料 (修正：加上密碼驗證參數)
   // ----------------------------------------------------------------
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // 加上密碼參數
-      const response = await fetch(`${API_URL}?adminKey=${passwordInput}`);
+      // 關鍵修正：這裡加上了 ?adminKey=... 這樣後端才會放行
+      const response = await fetch(`${API_URL}?adminKey=${ADMIN_PASSWORD}`);
       const json = await response.json();
       
       if (json.status === 'success' && json.data) {
@@ -104,20 +95,20 @@ function App() {
           recent: rows.slice(-5).reverse()
         });
         
-        setView('dashboard'); 
+        setView('dashboard');
       } else {
-         setErrorMsg("讀取失敗或是密碼錯誤");
+        alert("驗證失敗或無資料");
       }
     } catch (error) {
       console.error(error);
-      alert("無法讀取數據，請確認後端部署版本是否更新。");
+      alert("無法讀取數據，請確認後端部署正常。");
     } finally {
       setLoading(false);
     }
   };
 
   // ----------------------------------------------------------------
-  // 功能：驗證密碼
+  // 驗證密碼
   // ----------------------------------------------------------------
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,13 +120,10 @@ function App() {
     }
   };
 
-  // ----------------------------------------------------------------
-  // 3. 畫面渲染 (UI)
-  // ----------------------------------------------------------------
   return (
     <div className="min-h-screen bg-stone-100 font-sans text-stone-800">
       
-      {/* 頂部導航列 */}
+      {/* 頂部導航 */}
       <header className="bg-stone-900 text-white p-4 shadow-md sticky top-0 z-10">
         <div className="max-w-3xl mx-auto flex justify-between items-center">
           <div>
@@ -161,7 +149,7 @@ function App() {
 
       <main className="max-w-3xl mx-auto p-4 pb-20">
         
-        {/* === 1. 新增表單畫面 === */}
+        {/* === 1. 新增表單 === */}
         {view === 'form' && (
           <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
             <div className="p-4 bg-amber-50 border-b border-amber-100">
@@ -211,6 +199,18 @@ function App() {
                   <option value="牌位">牌位</option>
                   <option value="功德燈">功德燈</option>
                 </select>
+              </div>
+
+               {/* 新增：塔位編號 */}
+               <div>
+                <label className="block text-xs font-medium text-stone-500 mb-1">塔位/牌位編號</label>
+                <input 
+                  type="text" 
+                  placeholder="例如：A區-101"
+                  value={formData.towerId}
+                  onChange={e => setFormData({...formData, towerId: e.target.value})}
+                  className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
               </div>
 
               <div>
@@ -311,7 +311,7 @@ function App() {
           </div>
         )}
 
-        {/* === 3. 儀表板畫面 === */}
+        {/* === 3. 儀表板 === */}
         {view === 'dashboard' && (
           <div className="space-y-4 animate-fade-in">
             <h2 className="font-bold text-xl text-stone-800 px-1">業績總覽</h2>
@@ -348,7 +348,7 @@ function App() {
                   <tbody className="divide-y divide-stone-100">
                     {stats.recent.map((row, i) => (
                       <tr key={i}>
-                        <td className="p-3 text-stone-600">{row.date ? new Date(row.date).toLocaleDateString() : '-'}</td>
+                        <td className="p-3 text-stone-600">{row.date}</td>
                         <td className="p-3 font-medium">{row.salesRep}</td>
                         <td className="p-3 text-stone-500">{row.productType}</td>
                         <td className="p-3 text-right font-mono">${Number(row.actualPrice).toLocaleString()}</td>
