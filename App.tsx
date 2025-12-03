@@ -4,7 +4,7 @@ import { PlusCircle, LayoutDashboard, Save, Loader2, Lock, LogIn } from 'lucide-
 // ------------------------------------------------------------------
 // 1. 設定區域
 // ------------------------------------------------------------------
-// 這是您剛剛產生的 Google Apps Script 網址
+// 這是您最新的 Google Apps Script 網址
 const API_URL = "https://script.google.com/macros/s/AKfycbyoFAj2LOamK4ISy2g9y6wforgHuvdqXdTdpeHjC7wPKG_ipOoRUE_ua1TLt-pvrhyf/exec";
 
 // 設定管理員密碼 (查看報表用)
@@ -48,7 +48,7 @@ function App() {
     setLoading(true);
 
     try {
-      // 準備要傳送的資料 (欄位名稱對應您的 GAS 後端)
+      // 準備要傳送的資料
       const payload = {
         ...formData,
         id: crypto.randomUUID(),
@@ -60,7 +60,7 @@ function App() {
       // 使用 fetch POST 傳送
       await fetch(API_URL, {
         method: "POST",
-        mode: "no-cors", // 關鍵：解決跨域問題
+        mode: "no-cors", 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -82,11 +82,11 @@ function App() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(API_URL);
+      // 加上密碼參數
+      const response = await fetch(`${API_URL}?adminKey=${passwordInput}`);
       const json = await response.json();
       
       if (json.status === 'success' && json.data) {
-        // 計算統計數據
         const rows = json.data;
         let sales = 0;
         let received = 0;
@@ -101,14 +101,16 @@ function App() {
           totalReceived: received,
           balance: sales - received,
           count: rows.length,
-          recent: rows.slice(-5).reverse() // 取最後5筆並反轉
+          recent: rows.slice(-5).reverse()
         });
         
-        setView('dashboard'); // 密碼正確且讀取成功後，進入儀表板
+        setView('dashboard'); 
+      } else {
+         setErrorMsg("讀取失敗或是密碼錯誤");
       }
     } catch (error) {
       console.error(error);
-      alert("無法讀取數據，請稍後再試。");
+      alert("無法讀取數據，請確認後端部署版本是否更新。");
     } finally {
       setLoading(false);
     }
@@ -121,7 +123,7 @@ function App() {
     e.preventDefault();
     if (passwordInput === ADMIN_PASSWORD) {
       setErrorMsg("");
-      fetchDashboardData(); // 密碼對了才去抓資料
+      fetchDashboardData(); 
     } else {
       setErrorMsg("密碼錯誤");
     }
@@ -169,7 +171,6 @@ function App() {
             </div>
             
             <div className="p-5 space-y-4">
-              {/* 日期與業務 */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-stone-500 mb-1">成交日期</label>
@@ -197,7 +198,6 @@ function App() {
                 </div>
               </div>
 
-              {/* 產品與客戶 */}
               <div>
                 <label className="block text-xs font-medium text-stone-500 mb-1">產品類型</label>
                 <select 
@@ -225,7 +225,6 @@ function App() {
                 />
               </div>
 
-              {/* 金額 */}
               <div className="p-4 bg-stone-50 rounded-lg space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-stone-500 mb-1">成交總金額 (Actual Price)</label>
@@ -279,7 +278,7 @@ function App() {
           </form>
         )}
 
-        {/* === 2. 登入畫面 (鎖) === */}
+        {/* === 2. 登入畫面 === */}
         {view === 'login' && (
           <div className="flex flex-col items-center justify-center pt-20 px-4">
             <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm text-center">
@@ -317,7 +316,6 @@ function App() {
           <div className="space-y-4 animate-fade-in">
             <h2 className="font-bold text-xl text-stone-800 px-1">業績總覽</h2>
             
-            {/* 數據卡片 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
                 <p className="text-xs text-stone-500 mb-1">總成交金額</p>
@@ -333,7 +331,6 @@ function App() {
               </div>
             </div>
 
-            {/* 近期紀錄清單 */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden mt-6">
               <div className="p-4 border-b border-stone-100 flex justify-between items-center">
                 <h3 className="font-bold text-stone-700">最新 {stats.recent.length} 筆紀錄</h3>
