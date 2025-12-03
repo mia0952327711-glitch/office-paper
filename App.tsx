@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ------------------------------------------------------------------
-// 0. 內建圖示元件 (解決 build failed 問題)
+// 0. 內建圖示元件 (解決 lucide-react 依賴問題)
 // ------------------------------------------------------------------
 const PlusCircle = ({ size = 24, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
@@ -184,7 +184,7 @@ function App() {
           <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
             <div className="p-4 bg-amber-50 border-b border-amber-100">
               <h2 className="font-bold text-amber-800 flex items-center gap-2">
-                <PlusCircle size={18} className="text-amber-600" /> 法華山瑤池陵宮 - 每日成交回報單
+                <PlusCircle size={18} className="text-amber-600" /> 新增成交回報
               </h2>
             </div>
             
@@ -310,10 +310,9 @@ function App() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-stone-500 mb-1">使用人姓名 *</label>
+                    <label className="block text-xs font-medium text-stone-500 mb-1">使用人姓名 (選填)</label>
                     <input 
                       type="text" 
-                      required
                       placeholder="往生者/預定者"
                       value={formData.userName}
                       onChange={e => setFormData({...formData, userName: e.target.value})}
