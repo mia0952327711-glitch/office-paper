@@ -1,10 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, LayoutDashboard, Save, Loader2, Lock, LogIn } from 'lucide-react';
+
+// ------------------------------------------------------------------
+// 0. 內建圖示元件 (解決 lucide-react 依賴問題)
+// ------------------------------------------------------------------
+const PlusCircle = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+);
+const LayoutDashboard = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+);
+const Save = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+);
+const Loader2 = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+);
+const Lock = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+);
+const LogIn = ({ size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+);
 
 // ------------------------------------------------------------------
 // 設定區域
 // ------------------------------------------------------------------
-// 請確認這裡填入的是您 Apps Script 剛剛部署好的網址
+// 您原本設定好的 Apps Script 網址
 const API_URL = "https://script.google.com/macros/s/AKfycbyoFAj2LOamK4ISy2g9y6wforgHuvdqXdTdpeHjC7wPKG_ipOoRUE_ua1TLt-pvrhyf/exec";
 
 // 設定管理員密碼
@@ -28,7 +49,7 @@ function App() {
     date: new Date().toISOString().split('T')[0],
     salesRep: '',
     productType: '個人塔位',
-    towerId: '',  // 新增塔位編號欄位
+    towerId: '',  // 塔位編號欄位
     buyerName: '',
     actualPrice: '',
     receivedAmount: '',
@@ -68,12 +89,12 @@ function App() {
   };
 
   // ----------------------------------------------------------------
-  // 抓取資料 (修正：加上密碼驗證參數)
+  // 抓取資料
   // ----------------------------------------------------------------
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // 關鍵修正：這裡加上了 ?adminKey=... 這樣後端才會放行
+      // 加上 ?adminKey=... 進行驗證
       const response = await fetch(`${API_URL}?adminKey=${ADMIN_PASSWORD}`);
       const json = await response.json();
       
@@ -154,7 +175,7 @@ function App() {
           <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
             <div className="p-4 bg-amber-50 border-b border-amber-100">
               <h2 className="font-bold text-amber-800 flex items-center gap-2">
-                <PlusCircle size={18} /> 新增成交回報
+                <PlusCircle size={18} className="text-amber-600" /> 新增成交回報
               </h2>
             </div>
             
@@ -201,7 +222,7 @@ function App() {
                 </select>
               </div>
 
-               {/* 新增：塔位編號 */}
+               {/* 塔位編號 */}
                <div>
                 <label className="block text-xs font-medium text-stone-500 mb-1">塔位/牌位編號</label>
                 <input 
