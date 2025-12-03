@@ -121,7 +121,7 @@ function handleWrite(e) {
       // 如果沒有排程表，自動建立
       if (!scheduleSheet) {
         scheduleSheet = ss.insertSheet('進塔排程');
-        scheduleSheet.appendRow(['預計進塔日', '塔位編號',  '使用人', '業務員', '備註']);
+        scheduleSheet.appendRow(['預計進塔日', '塔位編號', '產品類型', '使用人', '權利人(買方)', '業務員', '備註']);
         scheduleSheet.setFrozenRows(1);
       }
 
