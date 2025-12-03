@@ -49,6 +49,7 @@ function App() {
     date: new Date().toISOString().split('T')[0],
     reportType: '新成交 (首次收訂/全額)',
     salesRep: '',
+    customSalesRep: '', // 新增：用於存儲自定義業務員名稱
     towerId: '', 
     productType: '個人塔位',
     buyerName: '',
@@ -74,8 +75,12 @@ function App() {
     setLoading(true);
 
     try {
+      // 處理業務員名稱邏輯：如果選了「其他」，就使用輸入框的值
+      const finalSalesRep = formData.salesRep === '其他' ? formData.customSalesRep : formData.salesRep;
+
       const payload = {
         ...formData,
+        salesRep: finalSalesRep, // 覆蓋原本的 salesRep
         timestamp: new Date().toISOString()
       };
 
@@ -246,6 +251,17 @@ function App() {
                       <option value="芝芝">芝芝</option>
                       <option value="其他">其他</option>
                     </select>
+                    {/* 若選「其他」則顯示輸入框 */}
+                    {formData.salesRep === '其他' && (
+                      <input 
+                        type="text"
+                        placeholder="請輸入業務員姓名"
+                        required
+                        value={formData.customSalesRep}
+                        onChange={e => setFormData({...formData, customSalesRep: e.target.value})}
+                        className="mt-2 w-full p-2 border border-stone-300 rounded-lg bg-stone-50"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
