@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 // ------------------------------------------------------------------
 // 0. 內建圖示元件 (解決 lucide-react 依賴問題)
 // ------------------------------------------------------------------
+// 這裡直接定義 SVG 圖示，不需要依賴外部套件，保證 Vercel 建置成功
 const PlusCircle = ({ size = 24, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
 );
