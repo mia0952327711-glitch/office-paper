@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ------------------------------------------------------------------
-// 0. 內建圖示元件 (解決 lucide-react 依賴問題)
+// 0. 內建圖示元件 (解決 lucide-react 依賴問題，確保 Vercel 部署成功)
 // ------------------------------------------------------------------
 const PlusCircle = ({ size = 24, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
@@ -49,7 +49,7 @@ function App() {
     date: new Date().toISOString().split('T')[0],
     reportType: '新成交 (首次收訂/全額)',
     salesRep: '',
-    customSalesRep: '', // 新增：用於存儲自定義業務員名稱
+    customSalesRep: '', // 用於存儲自定義業務員名稱
     towerId: '', 
     productType: '個人塔位',
     buyerName: '',
@@ -75,12 +75,19 @@ function App() {
     setLoading(true);
 
     try {
-      // 處理業務員名稱邏輯：如果選了「其他」，就使用輸入框的值
+      // 處理業務員名稱邏輯：如果選了「其他」，就使用輸入框的值，否則使用選單的值
       const finalSalesRep = formData.salesRep === '其他' ? formData.customSalesRep : formData.salesRep;
+
+      // 檢查是否真的有填寫業務員姓名
+      if (!finalSalesRep.trim()) {
+        alert("請填寫業務員姓名！");
+        setLoading(false);
+        return;
+      }
 
       const payload = {
         ...formData,
-        salesRep: finalSalesRep, // 覆蓋原本的 salesRep
+        salesRep: finalSalesRep, // 覆蓋原本的 salesRep 欄位傳送給後端
         timestamp: new Date().toISOString()
       };
 
@@ -118,7 +125,7 @@ function App() {
         let received = 0;
         
         rows.forEach((row: any) => {
-          // 這裡累加所有資料的金額
+          // 這裡累加後端回傳的資料 (後端已過濾掉預定單，只回傳正式業績)
           sales += Number(row.actualPrice) || 0;
           received += Number(row.receivedAmount) || 0;
         });
@@ -133,7 +140,7 @@ function App() {
         
         setView('dashboard');
       } else {
-        alert("驗證失敗或無資料");
+        alert("驗證失敗：密碼錯誤或無資料");
       }
     } catch (error) {
       console.error(error);
@@ -163,7 +170,8 @@ function App() {
       <header className="bg-stone-900 text-white p-4 shadow-md sticky top-0 z-10">
         <div className="max-w-3xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-lg font-bold text-amber-500">法華山瑤池陵宮</h1>
+            {/* 1. 標題已更新 */}
+            <h1 className="text-lg font-bold text-amber-500">法華山永安公司</h1>
             <p className="text-xs text-stone-400">每日成交回報系統</p>
           </div>
           <div className="flex gap-2">
@@ -184,7 +192,8 @@ function App() {
           <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
             <div className="p-4 bg-amber-50 border-b border-amber-100">
               <h2 className="font-bold text-amber-800 flex items-center gap-2">
-                <PlusCircle size={18} className="text-amber-600" /> 新增成交回報
+                {/* 2. 表單標題已更新 */}
+                <PlusCircle size={18} className="text-amber-600" /> 法華山永安公司 - 每日成交回報單
               </h2>
             </div>
             
@@ -251,7 +260,7 @@ function App() {
                       <option value="芝芝">芝芝</option>
                       <option value="其他">其他</option>
                     </select>
-                    {/* 若選「其他」則顯示輸入框 */}
+                    {/* 3. 若選「其他」則顯示輸入框 */}
                     {formData.salesRep === '其他' && (
                       <input 
                         type="text"
@@ -259,7 +268,7 @@ function App() {
                         required
                         value={formData.customSalesRep}
                         onChange={e => setFormData({...formData, customSalesRep: e.target.value})}
-                        className="mt-2 w-full p-2 border border-stone-300 rounded-lg bg-stone-50"
+                        className="mt-2 w-full p-2 border border-stone-300 rounded-lg bg-stone-50 animate-fade-in"
                       />
                     )}
                   </div>
@@ -310,6 +319,7 @@ function App() {
                     />
                   </div>
                   <div>
+                    {/* 4. 使用人姓名已改為選填 (移除 required) */}
                     <label className="block text-xs font-medium text-stone-500 mb-1">使用人姓名 (選填)</label>
                     <input 
                       type="text" 
