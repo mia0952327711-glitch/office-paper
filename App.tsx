@@ -41,11 +41,12 @@ function App() {
     } catch (e) { console.error("獲取資料失敗"); }
   };
 
+  // 修正：選擇舊單後，強制更新狀態
   const handleSelectRecord = (record: any) => {
     setFormData({
-      ...formData,
+      ...initialForm,
       reportType: '補收尾款/續收',
-      towerId: record.towerId || "",
+      towerId: record.towerId ? String(record.towerId) : "",
       productType: record.productType || "個人塔位",
       buyerName: record.buyerName || "",
       userName: record.userName || "",
@@ -55,11 +56,11 @@ function App() {
       notes: `續收自前單: ${record.date || ""}`
     });
     setShowResults(false);
-    setSearchQuery("");
+    setSearchQuery(""); // 清空搜尋列
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // 阻止 Enter 鍵刷新頁面
     setLoading(true);
     try {
       const yearMonth = formData.date.substring(0, 7); 
@@ -82,49 +83,58 @@ function App() {
     setLoading(false);
   };
 
-  const filteredData = dbData.filter(r => 
-    (r.towerId && r.towerId.toString().includes(searchQuery)) || 
-    (r.buyerName && r.buyerName.includes(searchQuery)) || 
-    (r.userName && r.userName.includes(searchQuery))
-  ).slice(0, 5);
+  // 搜尋過濾邏輯
+  const filteredData = dbData.filter(r => {
+    if (!searchQuery) return false;
+    const q = searchQuery.toLowerCase();
+    return (
+      (r.towerId && String(r.towerId).toLowerCase().includes(q)) || 
+      (r.buyerName && r.buyerName.toLowerCase().includes(q)) || 
+      (r.userName && r.userName.toLowerCase().includes(q))
+    );
+  }).slice(0, 5);
 
   return (
     <div className="min-h-screen bg-stone-100 font-sans text-stone-800 pb-10 px-4">
       <header className="max-w-md mx-auto py-4 flex justify-between items-center border-b mb-4">
         <div>
           <h1 className="text-xl font-bold text-amber-600">法華山訂單回報系統</h1>
-          <p className="text-[10px] text-stone-400 font-medium font-mono uppercase tracking-wider">Order Reporting System v7.1</p>
+          <p className="text-[10px] text-stone-400 font-medium tracking-wider uppercase">Order System v7.2</p>
         </div>
-        <button onClick={() => {setFormData(initialForm); refreshData();}} className="p-2 bg-white rounded-full shadow-sm text-stone-400">
+        <button type="button" onClick={() => {setFormData(initialForm); refreshData();}} className="p-2 bg-white rounded-full shadow-sm text-stone-400">
             <PlusCircle />
         </button>
       </header>
 
       <main className="max-w-md mx-auto space-y-4">
+        {/* 🔍 搜尋區：移除 Form 包裹避免 Enter 衝突 */}
         <div className="bg-white p-4 rounded-2xl shadow-sm border-2 border-amber-100 relative">
           <div className="flex items-center gap-2 mb-2 text-amber-700 font-bold text-sm">
-            <SearchIcon /> 快速查找舊單 (帶入預定資料)
+            <SearchIcon /> 快速查找舊單 (自動帶入)
           </div>
           <input 
-            className="w-full p-2 border rounded-lg bg-stone-50"
+            type="text"
+            className="w-full p-2 border rounded-lg bg-stone-50 focus:ring-2 focus:ring-amber-500 outline-none"
             value={searchQuery}
             onChange={(e) => {setSearchQuery(e.target.value); setShowResults(true);}}
             placeholder="輸入塔位編號或人名..."
+            autoComplete="off"
           />
           {showResults && searchQuery && filteredData.length > 0 && (
-            <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 divide-y">
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 divide-y max-h-60 overflow-auto">
               {filteredData.map((r, i) => (
-                <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 cursor-pointer">
-                  <p className="font-bold text-sm">{r.towerId} - {r.buyerName}</p>
-                  <p className="text-[10px] text-stone-400">成交日: {r.date} | 產品: {r.productType}</p>
+                <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 hover:bg-amber-50 cursor-pointer">
+                  <p className="font-bold text-sm text-stone-700">{r.towerId} - {r.buyerName}</p>
+                  <p className="text-[10px] text-stone-400">上次收款: {r.date} | 業務: {r.salesRep}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
+        {/* 📋 回報表單 */}
         <form onSubmit={handleSubmit} className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center border-b pb-2">
              <h2 className="font-bold text-stone-700">📋 成交回報細節</h2>
              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${formData.reportType.includes('補收') ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
                 {formData.reportType}
@@ -199,7 +209,7 @@ function App() {
           <textarea placeholder="備註 (續收請在此註明)" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full p-2 border rounded-lg text-sm h-16" />
 
           <button type="submit" disabled={loading} className="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold shadow-xl flex justify-center items-center gap-2 active:scale-95 transition-all">
-            {loading ? "連線中..." : <><Save /> 提交完整報表</>}
+            {loading ? "連線中..." : <><Save /> 提交回報單</>}
           </button>
         </form>
       </main>
