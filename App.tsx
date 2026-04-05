@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-// 圖示元件
 const PlusCircle = ({ size = 22 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>;
 const Save = ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
 const SearchIcon = ({ size = 18 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
@@ -31,15 +30,17 @@ function App() {
   };
   const [formData, setFormData] = useState(initialForm);
 
-  useEffect(() => { refreshData(); }, []);
-
-  const refreshData = async () => {
-    try {
-      const res = await fetch(`${API_URL}?adminKey=012820`);
-      const json = await res.json();
-      if (json.data) setDbData(json.data);
-    } catch (e) { console.error("獲取資料失敗"); }
-  };
+  // 初始化時抓取資料，若失敗不跳轉
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`${API_URL}?adminKey=012820`);
+        const json = await res.json();
+        if (json.data) setDbData(json.data);
+      } catch (e) { console.log("背景抓取資料中..."); }
+    };
+    fetchData();
+  }, []);
 
   const handleSelectRecord = (record: any) => {
     setFormData({
@@ -58,14 +59,11 @@ function App() {
     setSearchQuery("");
   };
 
-  // --- 您指定的完整版 handleSubmit 邏輯 ---
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // 防止按 Enter 刷新
+    e.preventDefault(); // 【關鍵修復】：防止表單按下 Enter 後頁面跳轉
     setLoading(true);
     try {
-      // 【核心優化】：自動抓取月份作為結帳標籤
       const yearMonth = formData.date.substring(0, 7); 
-      // 【核心優化】：產生唯一對帳 ID，解決預定轉正式對不上帳的問題
       const matchId = `${formData.towerId.trim()}_${formData.buyerName.trim()}`;
 
       await fetch(API_URL, {
@@ -80,8 +78,7 @@ function App() {
 
       alert(`🎉 報單成功！本筆歸類至 ${yearMonth} 帳目`);
       setFormData(initialForm);
-      refreshData(); // 重新整理搜尋緩存
-    } catch (e) { alert("傳送失敗"); }
+    } catch (e) { alert("傳送失敗，請稍後再試"); }
     setLoading(false);
   };
 
@@ -90,8 +87,7 @@ function App() {
     const q = searchQuery.toLowerCase();
     return (
       (r.towerId && String(r.towerId).toLowerCase().includes(q)) || 
-      (r.buyerName && r.buyerName.toLowerCase().includes(q)) || 
-      (r.userName && r.userName.toLowerCase().includes(q))
+      (r.buyerName && r.buyerName.toLowerCase().includes(q))
     );
   }).slice(0, 5);
 
@@ -100,37 +96,39 @@ function App() {
       <header className="max-w-md mx-auto py-4 flex justify-between items-center border-b mb-4">
         <div>
           <h1 className="text-xl font-bold text-amber-600">法華山訂單回報系統</h1>
-          <p className="text-[10px] text-stone-400 font-medium tracking-wider uppercase">Order System v7.3</p>
+          <p className="text-[10px] text-stone-400 font-medium">Order System v7.4</p>
         </div>
-        <button type="button" onClick={() => {setFormData(initialForm); refreshData();}} className="p-2 bg-white rounded-full shadow-sm text-stone-400 active:rotate-180 transition-all">
+        <button type="button" onClick={() => window.location.reload()} className="p-2 bg-white rounded-full shadow-sm text-stone-400">
             <PlusCircle />
         </button>
       </header>
 
       <main className="max-w-md mx-auto space-y-4">
-        {/* 🔍 搜尋帶入區 */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border-2 border-amber-100 relative">
+        {/* 🔍 搜尋區 */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm border-2 border-amber-100">
           <div className="flex items-center gap-2 mb-2 text-amber-700 font-bold text-sm">
-            <SearchIcon /> 快速找舊單 (輸入塔位/姓名)
+            <SearchIcon /> 快速找舊單
           </div>
-          <input 
-            type="text"
-            className="w-full p-2 border rounded-lg bg-stone-50 focus:ring-2 focus:ring-amber-500 outline-none"
-            value={searchQuery}
-            onChange={(e) => {setSearchQuery(e.target.value); setShowResults(true);}}
-            placeholder="搜尋預定客戶資料..."
-            autoComplete="off"
-          />
-          {showResults && searchQuery && filteredData.length > 0 && (
-            <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 divide-y max-h-60 overflow-auto">
-              {filteredData.map((r, i) => (
-                <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 hover:bg-amber-50 cursor-pointer text-left">
-                  <p className="font-bold text-sm text-stone-700">{r.towerId} - {r.buyerName}</p>
-                  <p className="text-[10px] text-stone-400">成交日: {r.date} | 業務: {r.salesRep}</p>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="relative">
+            <input 
+              type="text"
+              className="w-full p-2 border rounded-lg bg-stone-50"
+              value={searchQuery}
+              onChange={(e) => {setSearchQuery(e.target.value); setShowResults(true);}}
+              placeholder="輸入塔位或姓名搜尋..."
+              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+            />
+            {showResults && searchQuery && filteredData.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 divide-y">
+                {filteredData.map((r, i) => (
+                  <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 cursor-pointer text-left">
+                    <p className="font-bold text-sm text-stone-700">{r.towerId} - {r.buyerName}</p>
+                    <p className="text-[10px] text-stone-400">{r.date} | {r.salesRep}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 📋 回報表單 */}
@@ -149,7 +147,7 @@ function App() {
             </div>
             <div>
               <label className="text-[10px] text-stone-400 ml-1">收款人員</label>
-              <select required value={formData.salesRep} onChange={e => setFormData({...formData, salesRep: e.target.value})} className="w-full p-2 border rounded-lg text-sm bg-stone-50">
+              <select required value={formData.salesRep} onChange={e => setFormData({...formData, salesRep: e.target.value})} className="w-full p-2 border rounded-lg text-sm">
                 <option value="">選擇姓名</option>
                 {STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -209,11 +207,11 @@ function App() {
 
           <textarea placeholder="備註 (續收請在此註明)" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full p-2 border rounded-lg text-sm h-16" />
 
-          <button type="submit" disabled={loading} className="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold shadow-xl flex justify-center items-center gap-2 active:scale-95 transition-all">
-            {loading ? "處理中..." : <><Save /> 提交回報單</>}
+          <button type="submit" disabled={loading} className="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">
+            {loading ? "連線中..." : <><Save /> 提交回報單</>}
           </button>
         </form>
-      </header>
+      </main>
     </div>
   );
 }
