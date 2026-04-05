@@ -38,7 +38,7 @@ function App() {
       const res = await fetch(`${API_URL}?adminKey=012820`);
       const json = await res.json();
       if (json.data) setDbData(json.data);
-    } catch (e) { console.error("獲取失敗"); }
+    } catch (e) { console.error("獲取資料失敗"); }
   };
 
   const handleSelectRecord = (record: any) => {
@@ -58,17 +58,11 @@ function App() {
     setSearchQuery("");
   };
 
-  // ==========================================
-  // 核心 handleSubmit：包含自動分月與對帳 ID
-  // ==========================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // 1. 【核心優化】：自動抓取月份作為結帳標籤 (YYYY-MM)
       const yearMonth = formData.date.substring(0, 7); 
-      
-      // 2. 【核心優化】：產生唯一對帳 ID，解決預定轉正式對不上帳的問題
       const matchId = `${formData.towerId.trim()}_${formData.buyerName.trim()}`;
 
       await fetch(API_URL, {
@@ -81,12 +75,10 @@ function App() {
         })
       });
 
-      alert(`🎉 報單成功！本筆已自動歸類至 ${yearMonth} 帳目`);
+      alert(`🎉 報單成功！本筆歸類至 ${yearMonth} 帳目`);
       setFormData(initialForm);
       refreshData(); 
-    } catch (e) { 
-      alert("傳送失敗，請檢查網路連線"); 
-    }
+    } catch (e) { alert("傳送失敗"); }
     setLoading(false);
   };
 
@@ -100,8 +92,8 @@ function App() {
     <div className="min-h-screen bg-stone-100 font-sans text-stone-800 pb-10 px-4">
       <header className="max-w-md mx-auto py-4 flex justify-between items-center border-b mb-4">
         <div>
-          <h1 className="text-xl font-bold text-amber-600">法華山永報系統</h1>
-          <p className="text-[10px] text-stone-400 font-medium">VERSION 7.0 | 智慧分月勾稽版</p>
+          <h1 className="text-xl font-bold text-amber-600">法華山訂單回報系統</h1>
+          <p className="text-[10px] text-stone-400 font-medium font-mono uppercase tracking-wider">Order Reporting System v7.1</p>
         </div>
         <button onClick={() => {setFormData(initialForm); refreshData();}} className="p-2 bg-white rounded-full shadow-sm text-stone-400">
             <PlusCircle />
@@ -109,16 +101,15 @@ function App() {
       </header>
 
       <main className="max-w-md mx-auto space-y-4">
-        {/* 🔍 搜尋區 */}
         <div className="bg-white p-4 rounded-2xl shadow-sm border-2 border-amber-100 relative">
           <div className="flex items-center gap-2 mb-2 text-amber-700 font-bold text-sm">
-            <SearchIcon /> 快速帶入舊單 (輸入塔位/人名)
+            <SearchIcon /> 快速查找舊單 (帶入預定資料)
           </div>
           <input 
             className="w-full p-2 border rounded-lg bg-stone-50"
             value={searchQuery}
             onChange={(e) => {setSearchQuery(e.target.value); setShowResults(true);}}
-            placeholder="搜尋預定客戶資料..."
+            placeholder="輸入塔位編號或人名..."
           />
           {showResults && searchQuery && filteredData.length > 0 && (
             <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 divide-y">
@@ -132,10 +123,9 @@ function App() {
           )}
         </div>
 
-        {/* 📋 完整表單 */}
         <form onSubmit={handleSubmit} className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
           <div className="flex justify-between items-center">
-             <h2 className="font-bold text-stone-700">📋 成交回報詳細內容</h2>
+             <h2 className="font-bold text-stone-700">📋 成交回報細節</h2>
              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${formData.reportType.includes('補收') ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
                 {formData.reportType}
              </span>
@@ -190,7 +180,7 @@ function App() {
 
           {formData.productType !== "壽位" && (
             <div>
-              <label className="text-[10px] text-amber-600 font-bold ml-1">預計進塔日期 (自動分流排程)</label>
+              <label className="text-[10px] text-amber-600 font-bold ml-1">預計進塔日期</label>
               <input type="date" value={formData.installDate} onChange={e => setFormData({...formData, installDate: e.target.value})} className="w-full p-2 border border-amber-200 rounded-lg text-sm bg-amber-50" />
             </div>
           )}
