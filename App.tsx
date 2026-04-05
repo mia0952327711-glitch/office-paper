@@ -35,7 +35,7 @@ function App() {
       const res = await fetch(`${API_URL}?adminKey=012820&t=${Date.now()}`);
       const json = await res.json();
       if (json && json.data) setDbData(json.data);
-    } catch (e) { console.error("搜尋異常"); }
+    } catch (e) { console.error("搜尋連線異常"); }
     setSearching(false);
   };
 
@@ -69,12 +69,13 @@ function App() {
         mode: "no-cors",
         body: JSON.stringify({ ...formData, accountingMonth: yearMonth, matchId: matchId })
       });
-      alert(`🎉 報單成功！已歸類至 ${yearMonth}`);
+      alert(`🎉 報單成功！本筆已歸類至 ${yearMonth}`);
       setFormData(initialForm);
     } catch (e) { alert("提交失敗"); }
     setLoading(false);
   };
 
+  // 💡 優化：搜尋結果上限調為 10 筆
   const filteredData = (dbData || []).filter(r => {
     if (!r || !searchQuery) return false;
     const q = searchQuery.toLowerCase();
@@ -83,14 +84,14 @@ function App() {
       String(r.buyerName || "").toLowerCase().includes(q) ||
       String(r.userName || "").toLowerCase().includes(q)
     );
-  }).slice(0, 5);
+  }).slice(0, 10);
 
   return (
     <div className="min-h-screen bg-stone-100 font-sans text-stone-800 pb-10 px-4">
       <header className="max-w-md mx-auto py-4 flex justify-between items-center border-b mb-4">
         <div>
-          <h1 className="text-xl font-bold text-amber-600">法華山訂單回報系統</h1>
-          <p className="text-[10px] text-stone-400 font-medium">v8.1 | 全欄位自動帶入版</p>
+          <h1 className="text-xl font-bold text-amber-600 text-left">法華山訂單回報系統</h1>
+          <p className="text-[10px] text-stone-400 font-medium text-left">v8.2 | 搜尋結果擴增至 10 筆</p>
         </div>
         <button type="button" onClick={() => window.location.reload()} className="text-[10px] bg-white px-2 py-1 rounded shadow">重新整理</button>
       </header>
@@ -113,7 +114,7 @@ function App() {
           </div>
           
           {showResults && (
-            <div className="mt-2 bg-white rounded-lg shadow-inner overflow-hidden border border-amber-100">
+            <div className="mt-2 bg-white rounded-lg shadow-inner overflow-hidden border border-amber-100 max-h-72 overflow-y-auto">
               {searching ? ( <div className="p-3 text-center text-stone-400 text-sm italic">讀取中...</div>
               ) : filteredData.length > 0 ? (
                 filteredData.map((r, i) => (
@@ -132,7 +133,7 @@ function App() {
         {/* 📋 報單表單 */}
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-md space-y-4 text-left">
           <div className="flex justify-between items-center border-b pb-2 mb-2">
-            <h2 className="font-bold text-sm">📋 填寫報單資料</h2>
+            <h2 className="font-bold text-sm text-stone-700">📋 填寫報單資料</h2>
             <span className="text-[10px] font-bold text-amber-600 px-2 bg-amber-50 rounded-full">{formData.reportType}</span>
           </div>
 
