@@ -27,13 +27,12 @@ function App() {
   };
   const [formData, setFormData] = useState(initialForm);
 
-  // 【核心修復】：搜尋 function 獨立，不使用 submit 模式
   const handleSearchClick = async () => {
     if (!searchQuery) return;
     setSearching(true);
     setShowResults(true);
     try {
-      // 加上隨機參數避免瀏覽器快取舊資料
+      // 加上隨機參數避免快取，adminKey 務必與 GAS 一致
       const res = await fetch(`${API_URL}?adminKey=012820&t=${new Date().getTime()}`);
       const json = await res.json();
       if (json.data) {
@@ -96,7 +95,7 @@ function App() {
 
       <main className="max-w-md mx-auto space-y-4">
         
-        {/* === 🔍 搜尋區 (完全隔離在 Form 之外) === */}
+        {/* === 🔍 搜尋區 === */}
         <div className="bg-amber-50 p-4 rounded-2xl shadow-sm border-2 border-amber-200">
           <label className="block text-xs font-bold text-amber-700 mb-2">快速查找舊單（補收尾款專用）</label>
           <div className="flex gap-2">
@@ -105,6 +104,7 @@ function App() {
               className="flex-1 p-2 border rounded-lg"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault() || handleSearchClick())}
               placeholder="輸入塔位編號或姓名"
             />
             <button 
@@ -122,13 +122,13 @@ function App() {
                 <div className="p-3 text-center text-stone-400 text-sm italic">正在讀取雲端資料...</div>
               ) : filteredData.length > 0 ? (
                 filteredData.map((r, i) => (
-                  <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 border-b active:bg-amber-100">
+                  <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 border-b active:bg-amber-100 cursor-pointer">
                     <p className="font-bold text-sm">{r.towerId} - {r.buyerName}</p>
-                    <p className="text-[10px] text-stone-400">成交日: {r.date} | 收款人: {r.salesRep}</p>
+                    <p className="text-[10px] text-stone-400">成交日: {r.date} | 業務: {r.salesRep}</p>
                   </div>
                 ))
               ) : (
-                searchQuery && <div className="p-3 text-center text-xs text-stone-400">找不到匹配資料</div>
+                searchQuery && !searching && <div className="p-3 text-center text-xs text-stone-400">找不到匹配資料</div>
               )}
             </div>
           )}
@@ -145,7 +145,7 @@ function App() {
             <input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="p-2 border rounded-lg text-sm" />
             <select required value={formData.salesRep} onChange={e => setFormData({...formData, salesRep: e.target.value})} className="p-2 border rounded-lg text-sm">
               <option value="">選擇人員</option>
-              {STAFF_LIST.map(s => <option key(s} value={s}>{s}</option>)}
+              {STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 
