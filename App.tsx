@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const PlusCircle = ({ size = 22 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>;
 const Save = ({ size = 20 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
@@ -9,6 +9,7 @@ const STAFF_LIST = ["宏銘", "庭榆", "芝芝", "靖璇", "雅文", "美珠", 
 
 function App() {
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [dbData, setDbData] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -30,17 +31,22 @@ function App() {
   };
   const [formData, setFormData] = useState(initialForm);
 
-  // 初始化時抓取資料，若失敗不跳轉
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`${API_URL}?adminKey=012820`);
-        const json = await res.json();
-        if (json.data) setDbData(json.data);
-      } catch (e) { console.log("背景抓取資料中..."); }
-    };
-    fetchData();
-  }, []);
+  // 【改動】：點擊按鈕才執行搜尋，避免一開 App 就卡死
+  const handleSearch = async () => {
+    if (!searchQuery) return;
+    setSearching(true);
+    setShowResults(true);
+    try {
+      const res = await fetch(`${API_URL}?adminKey=012820`);
+      const json = await res.json();
+      if (json.data) {
+        setDbData(json.data);
+      }
+    } catch (e) {
+      alert("搜尋暫時無法連線，請手動填寫新單。");
+    }
+    setSearching(false);
+  };
 
   const handleSelectRecord = (record: any) => {
     setFormData({
@@ -60,7 +66,7 @@ function App() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // 【關鍵修復】：防止表單按下 Enter 後頁面跳轉
+    e.preventDefault();
     setLoading(true);
     try {
       const yearMonth = formData.date.substring(0, 7); 
@@ -69,21 +75,16 @@ function App() {
       await fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
-        body: JSON.stringify({ 
-          ...formData, 
-          accountingMonth: yearMonth, 
-          matchId: matchId 
-        })
+        body: JSON.stringify({ ...formData, accountingMonth: yearMonth, matchId: matchId })
       });
 
-      alert(`🎉 報單成功！本筆歸類至 ${yearMonth} 帳目`);
+      alert(`🎉 報單成功！本筆歸類至 ${yearMonth}`);
       setFormData(initialForm);
-    } catch (e) { alert("傳送失敗，請稍後再試"); }
+    } catch (e) { alert("傳送失敗"); }
     setLoading(false);
   };
 
   const filteredData = dbData.filter(r => {
-    if (!searchQuery) return false;
     const q = searchQuery.toLowerCase();
     return (
       (r.towerId && String(r.towerId).toLowerCase().includes(q)) || 
@@ -96,7 +97,7 @@ function App() {
       <header className="max-w-md mx-auto py-4 flex justify-between items-center border-b mb-4">
         <div>
           <h1 className="text-xl font-bold text-amber-600">法華山訂單回報系統</h1>
-          <p className="text-[10px] text-stone-400 font-medium">Order System v7.4</p>
+          <p className="text-[10px] text-stone-400 font-medium">Order System v7.5 - STABLE</p>
         </div>
         <button type="button" onClick={() => window.location.reload()} className="p-2 bg-white rounded-full shadow-sm text-stone-400">
             <PlusCircle />
@@ -107,25 +108,39 @@ function App() {
         {/* 🔍 搜尋區 */}
         <div className="bg-white p-4 rounded-2xl shadow-sm border-2 border-amber-100">
           <div className="flex items-center gap-2 mb-2 text-amber-700 font-bold text-sm">
-            <SearchIcon /> 快速找舊單
+            <SearchIcon /> 快速找舊單 (輸入後按搜尋)
           </div>
-          <div className="relative">
+          <div className="flex gap-2 relative">
             <input 
               type="text"
-              className="w-full p-2 border rounded-lg bg-stone-50"
+              className="flex-1 p-2 border rounded-lg bg-stone-50"
               value={searchQuery}
-              onChange={(e) => {setSearchQuery(e.target.value); setShowResults(true);}}
-              placeholder="輸入塔位或姓名搜尋..."
-              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="塔位編號或姓名..."
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault() || handleSearch())}
             />
-            {showResults && searchQuery && filteredData.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 divide-y">
-                {filteredData.map((r, i) => (
-                  <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 cursor-pointer text-left">
-                    <p className="font-bold text-sm text-stone-700">{r.towerId} - {r.buyerName}</p>
-                    <p className="text-[10px] text-stone-400">{r.date} | {r.salesRep}</p>
-                  </div>
-                ))}
+            <button 
+              type="button"
+              onClick={handleSearch}
+              className="bg-amber-600 text-white px-4 rounded-lg text-sm font-bold active:bg-amber-700"
+            >
+              {searching ? "..." : "搜尋"}
+            </button>
+
+            {showResults && searchQuery && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 divide-y max-h-60 overflow-auto">
+                {searching ? (
+                  <div className="p-4 text-center text-stone-400 text-sm">正在連線資料庫...</div>
+                ) : filteredData.length > 0 ? (
+                  filteredData.map((r, i) => (
+                    <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 cursor-pointer text-left">
+                      <p className="font-bold text-sm text-stone-700">{r.towerId} - {r.buyerName}</p>
+                      <p className="text-[10px] text-stone-400">前單日: {r.date} | 業務: {r.salesRep}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-stone-400 text-sm">找不到資料，請確認編號</div>
+                )}
               </div>
             )}
           </div>
@@ -134,7 +149,7 @@ function App() {
         {/* 📋 回報表單 */}
         <form onSubmit={handleSubmit} className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
-             <h2 className="font-bold text-stone-700 text-sm">📋 成交回報細節</h2>
+             <h2 className="font-bold text-stone-700 text-sm">📋 回報詳細內容</h2>
              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${formData.reportType.includes('補收') ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
                 {formData.reportType}
              </span>
@@ -155,60 +170,19 @@ function App() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] text-stone-400 ml-1">產品類型</label>
-              <select value={formData.productType} onChange={e => setFormData({...formData, productType: e.target.value})} className="w-full p-2 border rounded-lg text-sm">
-                <option value="個人塔位">個人塔位</option>
-                <option value="雙人/夫妻塔位">雙人/夫妻塔位</option>
-                <option value="家族型塔位">家族型塔位</option>
-                <option value="祖先牌位">祖先牌位</option>
-                <option value="壽位">壽位</option>
-                <option value="其他服務">其他服務</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] text-stone-400 ml-1">客戶來源</label>
-              <select value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})} className="w-full p-2 border rounded-lg text-sm">
-                <option value="自行前來">自行前來</option>
-                <option value="同業/禮儀公司介紹">同業介紹</option>
-                <option value="舊客介紹">舊客介紹</option>
-                <option value="開發件">開發件</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <input type="text" placeholder="塔位編號 *" required value={formData.towerId} onChange={e => setFormData({...formData, towerId: e.target.value})} className="p-2 border rounded-lg text-sm font-medium" />
             <input type="text" placeholder="權利人姓名 *" required value={formData.buyerName} onChange={e => setFormData({...formData, buyerName: e.target.value})} className="p-2 border rounded-lg text-sm font-medium" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <input type="text" placeholder="使用人(往生者)" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value})} className="p-2 border rounded-lg text-sm" />
-            <input type="text" placeholder="介紹人/單位" value={formData.referrer} onChange={e => setFormData({...formData, referrer: e.target.value})} className="p-2 border rounded-lg text-sm" />
+            <input type="number" placeholder="實際成交總價" required value={formData.actualPrice} onChange={e => setFormData({...formData, actualPrice: e.target.value})} className="p-2 border rounded-lg bg-red-50 font-bold" />
+            <input type="number" placeholder="本次實收金額" required value={formData.receivedAmount} onChange={e => setFormData({...formData, receivedAmount: e.target.value})} className="p-2 border rounded-lg bg-green-50 font-bold" />
           </div>
 
-          {formData.productType !== "壽位" && (
-            <div>
-              <label className="text-[10px] text-amber-600 font-bold ml-1">預計進塔日期</label>
-              <input type="date" value={formData.installDate} onChange={e => setFormData({...formData, installDate: e.target.value})} className="w-full p-2 border border-amber-200 rounded-lg text-sm bg-amber-50" />
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[10px] text-red-500 font-bold ml-1">實際成交總價</label>
-              <input type="number" required value={formData.actualPrice} onChange={e => setFormData({...formData, actualPrice: e.target.value})} className="w-full p-2 border rounded-lg bg-red-50 font-bold" />
-            </div>
-            <div>
-              <label className="text-[10px] text-green-600 font-bold ml-1">本次實收金額</label>
-              <input type="number" required value={formData.receivedAmount} onChange={e => setFormData({...formData, receivedAmount: e.target.value})} className="w-full p-2 border rounded-lg bg-green-50 font-bold" />
-            </div>
-          </div>
-
-          <textarea placeholder="備註 (續收請在此註明)" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full p-2 border rounded-lg text-sm h-16" />
+          <textarea placeholder="備註" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full p-2 border rounded-lg text-sm h-16" />
 
           <button type="submit" disabled={loading} className="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">
-            {loading ? "連線中..." : <><Save /> 提交回報單</>}
+            {loading ? "傳送中..." : "確認提交"}
           </button>
         </form>
       </main>
