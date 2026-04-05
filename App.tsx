@@ -41,10 +41,9 @@ function App() {
     } catch (e) { console.error("獲取資料失敗"); }
   };
 
-  // 修正：選擇舊單後，強制更新狀態
   const handleSelectRecord = (record: any) => {
     setFormData({
-      ...initialForm,
+      ...formData,
       reportType: '補收尾款/續收',
       towerId: record.towerId ? String(record.towerId) : "",
       productType: record.productType || "個人塔位",
@@ -56,26 +55,20 @@ function App() {
       notes: `續收自前單: ${record.date || ""}`
     });
     setShowResults(false);
-    setSearchQuery(""); // 清空搜尋列
+    setSearchQuery("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // 阻止 Enter 鍵刷新頁面
+    e.preventDefault();
     setLoading(true);
     try {
       const yearMonth = formData.date.substring(0, 7); 
       const matchId = `${formData.towerId.trim()}_${formData.buyerName.trim()}`;
-
       await fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
-        body: JSON.stringify({ 
-          ...formData, 
-          accountingMonth: yearMonth, 
-          matchId: matchId 
-        })
+        body: JSON.stringify({ ...formData, accountingMonth: yearMonth, matchId: matchId })
       });
-
       alert(`🎉 報單成功！本筆歸類至 ${yearMonth} 帳目`);
       setFormData(initialForm);
       refreshData(); 
@@ -83,7 +76,6 @@ function App() {
     setLoading(false);
   };
 
-  // 搜尋過濾邏輯
   const filteredData = dbData.filter(r => {
     if (!searchQuery) return false;
     const q = searchQuery.toLowerCase();
@@ -107,10 +99,10 @@ function App() {
       </header>
 
       <main className="max-w-md mx-auto space-y-4">
-        {/* 🔍 搜尋區：移除 Form 包裹避免 Enter 衝突 */}
+        {/* 🔍 搜尋區 */}
         <div className="bg-white p-4 rounded-2xl shadow-sm border-2 border-amber-100 relative">
           <div className="flex items-center gap-2 mb-2 text-amber-700 font-bold text-sm">
-            <SearchIcon /> 快速查找舊單 (自動帶入)
+            <SearchIcon /> 快速查找舊單 (帶入預定資料)
           </div>
           <input 
             type="text"
@@ -123,7 +115,7 @@ function App() {
           {showResults && searchQuery && filteredData.length > 0 && (
             <div className="absolute left-0 right-0 top-full mt-1 bg-white border rounded-xl shadow-xl z-50 divide-y max-h-60 overflow-auto">
               {filteredData.map((r, i) => (
-                <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 hover:bg-amber-50 cursor-pointer">
+                <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 hover:bg-amber-50 cursor-pointer text-left">
                   <p className="font-bold text-sm text-stone-700">{r.towerId} - {r.buyerName}</p>
                   <p className="text-[10px] text-stone-400">上次收款: {r.date} | 業務: {r.salesRep}</p>
                 </div>
