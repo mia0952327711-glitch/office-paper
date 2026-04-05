@@ -58,20 +58,29 @@ function App() {
     setSearchQuery("");
   };
 
+  // --- 您指定的完整版 handleSubmit 邏輯 ---
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // 防止按 Enter 刷新
     setLoading(true);
     try {
+      // 【核心優化】：自動抓取月份作為結帳標籤
       const yearMonth = formData.date.substring(0, 7); 
+      // 【核心優化】：產生唯一對帳 ID，解決預定轉正式對不上帳的問題
       const matchId = `${formData.towerId.trim()}_${formData.buyerName.trim()}`;
+
       await fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
-        body: JSON.stringify({ ...formData, accountingMonth: yearMonth, matchId: matchId })
+        body: JSON.stringify({ 
+          ...formData, 
+          accountingMonth: yearMonth, 
+          matchId: matchId 
+        })
       });
+
       alert(`🎉 報單成功！本筆歸類至 ${yearMonth} 帳目`);
       setFormData(initialForm);
-      refreshData(); 
+      refreshData(); // 重新整理搜尋緩存
     } catch (e) { alert("傳送失敗"); }
     setLoading(false);
   };
@@ -91,25 +100,25 @@ function App() {
       <header className="max-w-md mx-auto py-4 flex justify-between items-center border-b mb-4">
         <div>
           <h1 className="text-xl font-bold text-amber-600">法華山訂單回報系統</h1>
-          <p className="text-[10px] text-stone-400 font-medium tracking-wider uppercase">Order System v7.2</p>
+          <p className="text-[10px] text-stone-400 font-medium tracking-wider uppercase">Order System v7.3</p>
         </div>
-        <button type="button" onClick={() => {setFormData(initialForm); refreshData();}} className="p-2 bg-white rounded-full shadow-sm text-stone-400">
+        <button type="button" onClick={() => {setFormData(initialForm); refreshData();}} className="p-2 bg-white rounded-full shadow-sm text-stone-400 active:rotate-180 transition-all">
             <PlusCircle />
         </button>
       </header>
 
       <main className="max-w-md mx-auto space-y-4">
-        {/* 🔍 搜尋區 */}
+        {/* 🔍 搜尋帶入區 */}
         <div className="bg-white p-4 rounded-2xl shadow-sm border-2 border-amber-100 relative">
           <div className="flex items-center gap-2 mb-2 text-amber-700 font-bold text-sm">
-            <SearchIcon /> 快速查找舊單 (帶入預定資料)
+            <SearchIcon /> 快速找舊單 (輸入塔位/姓名)
           </div>
           <input 
             type="text"
             className="w-full p-2 border rounded-lg bg-stone-50 focus:ring-2 focus:ring-amber-500 outline-none"
             value={searchQuery}
             onChange={(e) => {setSearchQuery(e.target.value); setShowResults(true);}}
-            placeholder="輸入塔位編號或人名..."
+            placeholder="搜尋預定客戶資料..."
             autoComplete="off"
           />
           {showResults && searchQuery && filteredData.length > 0 && (
@@ -117,7 +126,7 @@ function App() {
               {filteredData.map((r, i) => (
                 <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 active:bg-amber-50 hover:bg-amber-50 cursor-pointer text-left">
                   <p className="font-bold text-sm text-stone-700">{r.towerId} - {r.buyerName}</p>
-                  <p className="text-[10px] text-stone-400">上次收款: {r.date} | 業務: {r.salesRep}</p>
+                  <p className="text-[10px] text-stone-400">成交日: {r.date} | 業務: {r.salesRep}</p>
                 </div>
               ))}
             </div>
@@ -127,7 +136,7 @@ function App() {
         {/* 📋 回報表單 */}
         <form onSubmit={handleSubmit} className="bg-white p-5 rounded-2xl shadow-sm space-y-4">
           <div className="flex justify-between items-center border-b pb-2">
-             <h2 className="font-bold text-stone-700">📋 成交回報細節</h2>
+             <h2 className="font-bold text-stone-700 text-sm">📋 成交回報細節</h2>
              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${formData.reportType.includes('補收') ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
                 {formData.reportType}
              </span>
@@ -135,7 +144,7 @@ function App() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-stone-400 ml-1">收款/成交日</label>
+              <label className="text-[10px] text-stone-400 ml-1">成交/收款日</label>
               <input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="w-full p-2 border rounded-lg text-sm" />
             </div>
             <div>
@@ -201,10 +210,10 @@ function App() {
           <textarea placeholder="備註 (續收請在此註明)" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full p-2 border rounded-lg text-sm h-16" />
 
           <button type="submit" disabled={loading} className="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold shadow-xl flex justify-center items-center gap-2 active:scale-95 transition-all">
-            {loading ? "連線中..." : <><Save /> 提交回報單</>}
+            {loading ? "處理中..." : <><Save /> 提交回報單</>}
           </button>
         </form>
-      </main>
+      </header>
     </div>
   );
 }
