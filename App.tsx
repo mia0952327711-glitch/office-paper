@@ -18,7 +18,7 @@ function App() {
     productType: '個人塔位',
     buyerName: '',
     userName: '',
-    listPrice: '', // 💡 定價
+    listPrice: '', 
     actualPrice: '',
     receivedAmount: '',
     installDate: '',
@@ -49,7 +49,7 @@ function App() {
       productType: record.productType || "個人塔位",
       buyerName: record.buyerName || "",
       userName: record.userName || "",
-      listPrice: record.listPrice || "", // 💡 自動帶入定價
+      listPrice: record.listPrice || "", 
       actualPrice: record.actualPrice || "",
       source: record.source || "自行前來",
       referrer: record.referrer || "",
@@ -77,24 +77,29 @@ function App() {
     setLoading(false);
   };
 
+  // 💡 關鍵修正：同時過濾 塔位、權利人、以及使用人
   const filteredData = (dbData || []).filter(r => {
+    if (!r || !searchQuery) return false;
     const q = searchQuery.toLowerCase();
-    return String(r.towerId || "").toLowerCase().includes(q) || String(r.buyerName || "").toLowerCase().includes(q);
+    return (
+      String(r.towerId || "").toLowerCase().includes(q) || 
+      String(r.buyerName || "").toLowerCase().includes(q) ||
+      String(r.userName || "").toLowerCase().includes(q)
+    );
   }).slice(0, 10);
 
   return (
     <div className="min-h-screen bg-stone-100 font-sans text-stone-800 pb-10 px-4">
       <header className="max-w-md mx-auto py-4 flex justify-between items-center border-b mb-4">
         <h1 className="text-xl font-bold text-amber-600">法華山訂單回報系統</h1>
-        <button onClick={() => window.location.reload()} className="text-[10px] bg-white px-2 py-1 rounded shadow">重新整理</button>
+        <button onClick={() => window.location.reload()} className="text-[10px] bg-white px-2 py-1 rounded shadow">刷新</button>
       </header>
 
       <main className="max-w-md mx-auto space-y-4 text-left">
-        {/* 🔍 搜尋區 */}
         <div className="bg-amber-50 p-4 rounded-2xl shadow-sm border-2 border-amber-200">
-          <label className="block text-xs font-bold text-amber-700 mb-2">快速查找 (塔位/姓名/使用人)</label>
+          <label className="block text-xs font-bold text-amber-700 mb-2">快速查找 (支援塔位/姓名/使用人)</label>
           <div className="flex gap-2">
-            <input type="text" className="flex-1 p-2 border rounded-lg" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="輸入關鍵字..." />
+            <input type="text" className="flex-1 p-2 border rounded-lg" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearchClick()} placeholder="輸入關鍵字..." />
             <button type="button" onClick={handleSearchClick} className="bg-amber-600 text-white px-4 rounded-lg font-bold">搜尋</button>
           </div>
           {showResults && searchQuery && (
@@ -102,8 +107,8 @@ function App() {
               {searching ? <div className="p-3 text-center text-stone-400 italic">讀取中...</div> : 
                 filteredData.map((r, i) => (
                   <div key={i} onClick={() => handleSelectRecord(r)} className="p-3 border-b active:bg-amber-100 cursor-pointer">
-                    <p className="font-bold text-sm">{r.towerId} - {r.buyerName}</p>
-                    <p className="text-[10px] text-stone-500">已收: {r.receivedAmount} | 定價: {r.listPrice}</p>
+                    <p className="font-bold text-sm text-stone-700">{r.towerId} - {r.buyerName}</p>
+                    <p className="text-[10px] text-stone-500">已收: {r.receivedAmount} | 使用人: {r.userName || "無"}</p>
                   </div>
                 ))
               }
@@ -111,11 +116,10 @@ function App() {
           )}
         </div>
 
-        {/* 📋 報單表單 */}
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-md space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 text-left">
             <div className="flex flex-col"><label className="text-[10px] text-stone-400">成交日期</label><input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="p-2 border rounded-lg text-sm" /></div>
-            <div className="flex flex-col"><label className="text-[10px] text-stone-400">收款人員</label><select required value={formData.salesRep} onChange={e => setFormData({...formData, salesRep: e.target.value})} className="p-2 border rounded-lg text-sm">{STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+            <div className="flex flex-col"><label className="text-[10px] text-stone-400">收款人員</label><select required value={formData.salesRep} onChange={e => setFormData({...formData, salesRep: e.target.value})} className="p-2 border rounded-lg text-sm"><option value="">選擇人員</option>{STAFF_LIST.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -128,11 +132,6 @@ function App() {
             <div className="flex flex-col"><label className="text-[10px] text-stone-400">使用人</label><input type="text" value={formData.userName} onChange={e => setFormData({...formData, userName: e.target.value})} className="p-2 border rounded-lg text-sm" /></div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col"><label className="text-[10px] text-stone-400">預計進塔日</label><input type="date" value={formData.installDate} onChange={e => setFormData({...formData, installDate: e.target.value})} className="p-2 border rounded-lg text-sm" /></div>
-            <div className="flex flex-col"><label className="text-[10px] text-stone-400">介紹人</label><input type="text" value={formData.referrer} onChange={e => setFormData({...formData, referrer: e.target.value})} className="p-2 border rounded-lg text-sm" /></div>
-          </div>
-
           <div className="grid grid-cols-3 gap-2">
             <div className="flex flex-col"><label className="text-[10px] text-stone-400">定價</label><input type="number" value={formData.listPrice} onChange={e => setFormData({...formData, listPrice: e.target.value})} className="p-2 border rounded-lg bg-stone-50 text-sm" /></div>
             <div className="flex flex-col"><label className="text-[10px] text-red-400">成交總價</label><input type="number" required value={formData.actualPrice} onChange={e => setFormData({...formData, actualPrice: e.target.value})} className="p-2 border rounded-lg bg-red-50 text-sm font-bold" /></div>
@@ -141,7 +140,7 @@ function App() {
 
           <div className="flex flex-col"><label className="text-[10px] text-stone-400">備註</label><textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full p-2 border rounded-lg text-sm h-16 bg-stone-50" /></div>
 
-          <button type="submit" disabled={loading} className="w-full bg-stone-900 text-white py-4 rounded-xl font-bold shadow-lg">
+          <button type="submit" disabled={loading} className="w-full bg-stone-900 text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition-all">
             {loading ? "處理中..." : "確認提交報單"}
           </button>
         </form>
